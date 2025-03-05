@@ -12,14 +12,52 @@ providers:
 experimental:
   plugins:
     badger:
-      moduleName: "github.com/fosrl/badger"
-      version: "v1.0.0-beta.3"
+      moduleName: github.com/fosrl/badger
+      version: v1.0.0
+    crowdsec:
+      moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+      version: v1.4.1
 
 log:
-  level: "INFO"
-  filePath: "/var/log/traefik/traefik.log"
+  level: INFO
+  format: json
 accessLog:
-  filePath: "/var/log/traefik/access.log"
+  filePath: /var/log/traefik/access.log
+  format: json
+  filters:
+    statusCodes:
+      - 200-299
+      - 400-499
+      - 500-599
+    retryAttempts: true
+    minDuration: 100ms
+  bufferingSize: 100
+  fields:
+    defaultMode: drop
+    names:
+      ClientAddr: keep
+      ClientHost: keep
+      RequestMethod: keep
+      RequestPath: keep
+      RequestProtocol: keep
+      DownstreamStatus: keep
+      DownstreamContentSize: keep
+      Duration: keep
+      ServiceName: keep
+      StartUTC: keep
+      TLSVersion: keep
+      TLSCipher: keep
+      RetryAttempts: keep
+    headers:
+      defaultMode: drop
+      names:
+        User-Agent: keep
+        X-Real-Ip: keep
+        X-Forwarded-For: keep
+        X-Forwarded-Proto: keep
+        Content-Type: keep
+        Authorization: redact
+        Cookie: redact
 
 certificatesResolvers:
   letsencrypt:
@@ -52,6 +90,8 @@ entryPoints:
     http:
       tls:
         certResolver: "letsencrypt"
+      middlewares:
+        - crowdsec@file
 
 serversTransport:
   insecureSkipVerify: true

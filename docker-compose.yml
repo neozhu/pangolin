@@ -1,6 +1,41 @@
 services:
+  crowdsec:
+    command: -t
+    container_name: crowdsec
+    depends_on:
+      - gerbil
+    environment:
+      ACQUIRE_FILES: /var/log/traefik/*.log
+      COLLECTIONS: crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/base-http-scenarios crowdsecurity/sshd crowdsecurity/linux crowdsecurity/appsec-generic-rules crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-crs
+      ENROLL_INSTANCE_NAME: pangolin-crowdsec
+      ENROLL_TAGS: docker
+      GID: "1000"
+      PARSERS: crowdsecurity/whitelists
+    expose:
+      - 9090
+      - 6060
+      - 7422
+    healthcheck:
+      test:
+        - CMD
+        - cscli
+        - capi
+        - status
+    image: crowdsecurity/crowdsec:latest
+    labels:
+      - traefik.enable=false
+    ports:
+      - 9090:9090
+      - 6060:6060
+    restart: unless-stopped
+    volumes:
+      - ./config/crowdsec:/etc/crowdsec
+      - ./config/crowdsec/db:/var/lib/crowdsec/data
+      - /var/log/auth.log:/var/log/auth.log:ro
+      - /var/log/syslog:/var/log/syslog:ro
+      - ./config/traefik/logs:/var/log/traefik:ro
   pangolin:
-    image: fosrl/pangolin:1.0.0-beta.14
+    image: fosrl/pangolin:1.0.0
     container_name: pangolin
     restart: unless-stopped
     volumes:
@@ -13,7 +48,7 @@ services:
 
 
   gerbil:
-    image: fosrl/gerbil:1.0.0-beta.3
+    image: fosrl/gerbil:1.0.0
     container_name: gerbil
     restart: unless-stopped
     depends_on:
@@ -36,7 +71,7 @@ services:
 
 
   traefik:
-    image: traefik:v3.3.3
+    image: traefik:v3.3.4
     container_name: traefik
     restart: unless-stopped
     
